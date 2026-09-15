@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sonya Músicas — Dashboard</title>
+<style>
+:root{--bg:#f6f1fa;--card:#fff;--ink:#28143f;--muted:#74657f;--p:#7440a8;--p2:#9b68c8;--p3:#eadcf5;--line:#e5d9ee;--shadow:0 12px 30px rgba(58,28,81,.10)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0,#eee1f8,transparent 35%),var(--bg);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
+.wrap{max-width:1200px;margin:auto;padding:28px}.hero{background:linear-gradient(135deg,#2a1246,#6f3ba6);color:white;border-radius:24px;padding:28px 30px;box-shadow:var(--shadow);position:relative;overflow:hidden}.hero:after{content:"♫  ♪  ♫";position:absolute;right:25px;top:20px;font-size:54px;opacity:.16}.hero h1{margin:0;font-size:34px}.hero p{margin:8px 0 0;color:#e9dcf4}
+.toolbar{display:flex;gap:14px;align-items:center;margin:20px 0;flex-wrap:wrap}.toolbar label{font-weight:700}.toolbar select{border:1px solid var(--line);background:white;border-radius:12px;padding:11px 14px;color:var(--ink);font-size:15px;min-width:210px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow)}.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}.value{font-size:24px;font-weight:850;margin-top:8px}.sub{font-size:12px;color:var(--muted);margin-top:5px}
+.section{margin-top:18px}.section h2{font-size:19px;margin:0 0 12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.bars{display:flex;flex-direction:column;gap:10px}.barrow{display:grid;grid-template-columns:100px 1fr 48px;gap:8px;align-items:center;font-size:13px}.track{height:13px;background:#eee6f3;border-radius:99px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--p),var(--p2));border-radius:99px}.rank{font-weight:800;text-align:right}
+.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left}.table th{color:var(--muted);font-size:11px;text-transform:uppercase}.pill{display:inline-block;background:var(--p3);padding:5px 8px;border-radius:99px;font-weight:800;color:#4c2670}
+.footer{margin:18px 0 5px;color:var(--muted);font-size:12px}
+@media(max-width:850px){.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}}@media(max-width:520px){.grid{grid-template-columns:1fr}.wrap{padding:14px}.hero h1{font-size:27px}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="hero"><h1>🎵 Sonya Músicas</h1><p>Dashboard de pedidos, vendas e preferências musicais</p></div>
+<div class="toolbar"><label for="city">🔎 Filtrar por cidade:</label><select id="city"><option value="Todas">Todas as cidades</option></select></div>
+<div class="grid" id="kpis"></div>
+<div class="section two">
+  <div class="card"><h2>🎼 Quais gêneros mais vendem?</h2><div id="genreBars" class="bars"></div></div>
+  <div class="card"><h2>📍 Quais cidades mais pedem?</h2><div id="cityBars" class="bars"></div></div>
+</div>
+<div class="section two">
+  <div class="card"><h2>⭐ Qual é a favorita da cidade?</h2><div id="fav"></div></div>
+  <div class="card"><h2>📉 Qual é a menos favorita?</h2><div id="least"></div></div>
+</div>
+<div class="section card"><h2>🎧 Preferências por cidade</h2><div id="table"></div></div>
+<div class="footer">Projeto fictício — dados de pedidos criados para a atividade. Os totais por gênero foram calculados pela soma da matriz cidade × gênero.</div>
+</div>
+<script>
+const D={"genres": ["Romântica", "Pop", "Funk", "Hip-Hop", "Rock"], "cities": ["São Paulo", "Rio de Janeiro", "Vitória", "Belo Horizonte", "Salvador"], "matrix": {"Rio de Janeiro": {"Romântica": 25, "Pop": 95, "Funk": 10, "Hip-Hop": 30, "Rock": 53}, "São Paulo": {"Romântica": 77, "Pop": 30, "Funk": 10, "Hip-Hop": 55, "Rock": 5}, "Vitória": {"Romântica": 110, "Pop": 10, "Funk": 20, "Hip-Hop": 25, "Rock": 55}, "Belo Horizonte": {"Romântica": 100, "Pop": 20, "Funk": 13, "Hip-Hop": 18, "Rock": 45}, "Salvador": {"Romântica": 120, "Pop": 230, "Funk": 60, "Hip-Hop": 21, "Rock": 80}}, "genreTotals": {"Romântica": 432, "Pop": 385, "Funk": 113, "Hip-Hop": 149, "Rock": 238}, "cityTotals": {"São Paulo": 177, "Rio de Janeiro": 213, "Vitória": 220, "Belo Horizonte": 196, "Salvador": 511}};
+const citySel=document.getElementById('city');
+D.cities.forEach(c=>{let o=document.createElement('option');o.value=c;o.textContent=c;citySel.appendChild(o)});
+function fmt(n){return n.toLocaleString('pt-BR')}
+function selected(){return citySel.value}
+function filteredTotals(){
+  const c=selected();
+  if(c==='Todas') return {...D.genreTotals};
+  return Object.fromEntries(D.genres.map(g=>[g,D.matrix[c][g]]));
+}
+function render(){
+  const c=selected(), gt=filteredTotals();
+  const cityTotal=c==='Todas'?Object.values(D.cityTotals).reduce((a,b)=>a+b,0):D.cityTotals[c];
+  const order=Object.entries(gt).sort((a,b)=>b[1]-a[1]);
+  const fav=order[0], least=order[order.length-1];
+  const topCity=Object.entries(D.cityTotals).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('kpis').innerHTML=`
+  <div class="card"><div class="label">${c==='Todas'?'Total de pedidos':'Pedidos na cidade'}</div><div class="value">${fmt(cityTotal)}</div><div class="sub">${c==='Todas'?'Todas as cidades':'Pedidos registrados'}</div></div>
+  <div class="card"><div class="label">Gênero mais pedido</div><div class="value">${fav[0]}</div><div class="sub">${fmt(fav[1])} pedidos</div></div>
+  <div class="card"><div class="label">Mais vendido no geral</div><div class="value">${c==='Todas'?Object.entries(D.genreTotals).sort((a,b)=>b[1]-a[1])[0][0]:fav[0]}</div><div class="sub">${fmt(c==='Todas'?Object.entries(D.genreTotals).sort((a,b)=>b[1]-a[1])[0][1]:fav[1])} pedidos</div></div>
+  <div class="card"><div class="label">Menos popular</div><div class="value">${least[0]}</div><div class="sub">${fmt(least[1])} pedidos</div></div>`;
+  const maxG=Math.max(...Object.values(gt));
+  document.getElementById('genreBars').innerHTML=order.map(([g,n],i)=>`<div class="barrow"><span>${g}</span><div class="track"><div class="fill" style="width:${n/maxG*100}%"></div></div><span class="rank">${fmt(n)}</span></div>`).join('');
+  const co=Object.entries(D.cityTotals).sort((a,b)=>b[1]-a[1]), maxC=co[0][1];
+  document.getElementById('cityBars').innerHTML=co.map(([x,n])=>`<div class="barrow"><span>${x}</span><div class="track"><div class="fill" style="width:${n/maxC*100}%"></div></div><span class="rank">${fmt(n)}</span></div>`).join('');
+  document.getElementById('fav').innerHTML=`<p><span class="pill">${c==='Todas'?'Selecione uma cidade':'Cidade selecionada: '+c}</span></p>`+(c==='Todas'?'<p>Escolha uma cidade acima para ver o gênero favorito e o menos favorito especificamente.</p>':`<p><b>${fav[0]}</b> é o gênero mais pedido em ${c}, com <b>${fmt(fav[1])}</b> pedidos.</p>`);
+  document.getElementById('least').innerHTML=c==='Todas'?'<p>Escolha uma cidade acima para identificar a menor preferência local.</p>':`<p><b>${least[0]}</b> é o gênero menos pedido em ${c}, com <b>${fmt(least[1])}</b> pedidos.</p>`;
+  document.getElementById('table').innerHTML=`<table class="table"><thead><tr><th>Cidade</th><th>Pedidos</th><th>Favorita</th><th>Menos favorita</th></tr></thead><tbody>`+
+  D.cities.map(x=>{let e=Object.entries(D.matrix[x]).sort((a,b)=>b[1]-a[1]);return `<tr><td>${x}</td><td>${fmt(D.cityTotals[x])}</td><td><span class="pill">${e[0][0]}</span> ${fmt(e[0][1])}</td><td>${e[e.length-1][0]} — ${fmt(e[e.length-1][1])}</td></tr>`}).join('')+
+  `</tbody></table>`;
+}
+citySel.addEventListener('change',render); render();
+</script></body></html>
